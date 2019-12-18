@@ -36,4 +36,18 @@ export class ChannelService {
     }
     return await this.channelRepository.save(channel);
   }
+
+  /**
+   * 将频道和用户解除绑定
+   * @param channelName 频道名称
+   * @param user 用户对象
+   */
+  async unlinkChannel(channelName: string, user: User): Promise<Channel> {
+    const channel = await this.channelRepository.findOne({name: channelName}, {relations: ['subscribers']});
+    const idx = channel.subscribers.findIndex(subscriber => subscriber.id === user.id);
+    if (idx !== -1) {
+      channel.subscribers.splice(idx, 1);
+    }
+    return await this.channelRepository.save(channel);
+  }
 }

@@ -11,7 +11,7 @@ export class AppController {
     private readonly wxService: WxService,
     private readonly configService: ConfigService,
     private readonly channelService: ChannelService,
-    ) {}
+  ) { }
 
   @Get()
   getHello(): string {
@@ -21,8 +21,9 @@ export class AppController {
   @Post('push')
   async push(@Body() body) {
     Logger.verbose(body);
-    const { channelName, text } = body;
-    if (!channelName || !text) {
+    const { channelName, text, templateId, templateData } = body;
+    const isTemplateMsg = templateId && templateData;
+    if (!channelName || !(text || isTemplateMsg)) {
       return {
         error: 1,
         message: 'Bad params!',
@@ -36,20 +37,38 @@ export class AppController {
       };
     }
     channel.subscribers.forEach(user => {
-      this.wxService.send({
-        template_id: this.configService.WX_TEMPLATE_ID,
-        touser: user.openid,
-        data: {
-          first: {
-            value: text,
-          },
-        },
-      });
+      let message = null;
+      if (isTemplateMsg) {
+        message = this.buildTemplateMsg(user, templateId, templateData);
+      } else {
+        message = this.buildSimpleMsg(user, text);
+      }
+      this.wxService.send(message);
     });
 
     return {
       error: 0,
       message: `Sending ${channel.subscribers.length} msg...`,
+    };
+  }
+
+  buildSimpleMsg(user, text) {
+    return {
+      template_id: this.configService.WX_TEMPLATE_ID,
+      touser: user.openid,
+      data: {
+        text: {
+          value: text,
+        },
+      },
+    };
+  }
+
+  buildTemplateMsg(user, templateId, templateData) {
+    return {
+      template_id: templateId,
+      touser: user.openid,
+      data: templateData,
     };
   }
 }

@@ -1,16 +1,16 @@
-FROM node:10 as dist
+FROM node:10-alpine as dist
 WORKDIR /tmp/
 COPY package.json package-lock.json tsconfig.json tsconfig.build.json ./
 COPY src/ src/
 RUN npm install
 RUN npm run build
 
-FROM node:10 as node_modules
+FROM node:10-alpine as node_modules
 WORKDIR /tmp/
 COPY package.json package-lock.json ./
 RUN npm install --production
 
-FROM node:10
+FROM node:10-alpine
 WORKDIR /app
 COPY --from=node_modules /tmp/node_modules ./node_modules
 COPY --from=dist /tmp/dist ./dist
